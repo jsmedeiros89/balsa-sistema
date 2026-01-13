@@ -25,59 +25,46 @@
     <div id="status"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+
 <script>
-    // --- CONFIGURAÇÃO (COLOQUE SEUS DADOS AQUI) ---
-    const S_URL = 'https://wyenjwmixvdlnjgkufge.supabase.co';
-    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5ZW5qd21peHZkbG5qZ2t1ZmdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzMzOTUsImV4cCI6MjA4MzkwOTM5NX0.fb9qeU9rbF8GeEk1_je7KldUHsWl5I5B0oLLoBShKuA';
-    // ----------------------------------------------
+    // Use exatamente esses nomes para garantir
+    const { createClient } = window.supabase;
+    
+    const S_URL = 'SUA_PROJECT_URL_AQUI';
+    const S_KEY = 'SUA_API_KEY_ANON_AQUI';
 
-    const supabase = Object.assign(window.supabase.createClient(S_URL, S_KEY));
+    const supabase = createClient(S_URL, S_KEY);
 
-    async function iniciar() {
+    async function carregarCategorias() {
+        const container = document.getElementById('lista-botoes');
+        
         try {
             const { data, error } = await supabase.from('categorias').select('*');
             
             if (error) throw error;
 
-            const container = document.getElementById('lista-botoes');
-            container.innerHTML = ''; // Limpa o "Carregando"
+            if (!data || data.length === 0) {
+                container.innerHTML = "Banco conectado, mas tabela vazia!";
+                return;
+            }
 
+            container.innerHTML = '';
             data.forEach(item => {
                 const b = document.createElement('button');
                 b.className = 'btn btn-blue';
-                b.innerText = `${item.nome} - R$ ${item.preco}`;
-                b.onclick = () => salvarVenda(item.id, item.preco, item.nome);
+                b.innerText = `${item.nome} - R$ ${item.preco.toFixed(2)}`;
+                b.onclick = () => registrarVenda(item);
                 container.appendChild(b);
             });
         } catch (err) {
-            document.getElementById('lista-botoes').innerHTML = "Erro ao carregar: " + err.message;
-            console.error(err);
+            container.innerHTML = "Erro técnico: " + err.message;
+            console.error("Erro detalhado:", err);
         }
     }
-
-    async function salvarVenda(id, valor, nome) {
-        const placa = document.getElementById('placa').value;
-        const status = document.getElementById('status');
-        
-        status.innerText = "Processando...";
-        status.style.color = "orange";
-
-        const { error } = await supabase.from('vendas').insert([
-            { categoria_id: id, valor_pago: valor, placa: placa, operador: 'Caixa 01' }
-        ]);
-
-        if (error) {
-            status.innerText = "Erro: " + error.message;
-            status.style.color = "red";
-        } else {
-            status.innerText = "✅ Venda: " + nome + " registrada!";
-            status.style.color = "green";
-            document.getElementById('placa').value = ''; // Limpa placa
-            setTimeout(() => { status.innerText = ''; }, 3000);
-        }
-    }
-
-    iniciar();
-</script>
+    
+    carregarCategorias();
+</script> 
 </body>
+
 </html>
