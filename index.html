@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Balsa - PDV</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; padding: 20px; background-color: #e9ecef; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h1 { text-align: center; color: #2c3e50; font-size: 1.5rem; }
+        .btn { width: 100%; padding: 15px; margin: 8px 0; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: transform 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-blue { background-color: #3498db; }
+        .input-placa { width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 18px; text-transform: uppercase; }
+        #status { text-align: center; margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Balsa - Cobrança</h1>
+    <input type="text" id="placa" class="input-placa" placeholder="PLACA (OPCIONAL)">
+    <div id="lista-botoes">Carregando categorias...</div>
+    <div id="status"></div>
+</div>
+
+<script>
+    // --- CONFIGURAÇÃO (COLOQUE SEUS DADOS AQUI) ---
+    const S_URL = 'https://wyenjwmixvdlnjgkufge.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5ZW5qd21peHZkbG5qZ2t1ZmdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMzMzOTUsImV4cCI6MjA4MzkwOTM5NX0.fb9qeU9rbF8GeEk1_je7KldUHsWl5I5B0oLLoBShKuA';
+    // ----------------------------------------------
+
+    const supabase = Object.assign(window.supabase.createClient(S_URL, S_KEY));
+
+    async function iniciar() {
+        try {
+            const { data, error } = await supabase.from('categorias').select('*');
+            
+            if (error) throw error;
+
+            const container = document.getElementById('lista-botoes');
+            container.innerHTML = ''; // Limpa o "Carregando"
+
+            data.forEach(item => {
+                const b = document.createElement('button');
+                b.className = 'btn btn-blue';
+                b.innerText = `${item.nome} - R$ ${item.preco}`;
+                b.onclick = () => salvarVenda(item.id, item.preco, item.nome);
+                container.appendChild(b);
+            });
+        } catch (err) {
+            document.getElementById('lista-botoes').innerHTML = "Erro ao carregar: " + err.message;
+            console.error(err);
+        }
+    }
+
+    async function salvarVenda(id, valor, nome) {
+        const placa = document.getElementById('placa').value;
+        const status = document.getElementById('status');
+        
+        status.innerText = "Processando...";
+        status.style.color = "orange";
+
+        const { error } = await supabase.from('vendas').insert([
+            { categoria_id: id, valor_pago: valor, placa: placa, operador: 'Caixa 01' }
+        ]);
+
+        if (error) {
+            status.innerText = "Erro: " + error.message;
+            status.style.color = "red";
+        } else {
+            status.innerText = "✅ Venda: " + nome + " registrada!";
+            status.style.color = "green";
+            document.getElementById('placa').value = ''; // Limpa placa
+            setTimeout(() => { status.innerText = ''; }, 3000);
+        }
+    }
+
+    iniciar();
+</script>
+</body>
+</html>
